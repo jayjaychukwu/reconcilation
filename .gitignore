@@ -169,3 +169,6 @@ _migrations/*
 
 #media
 media/
+
+#data dumos
+dump.rdb

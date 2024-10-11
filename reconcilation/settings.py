@@ -28,6 +28,7 @@ ALLOWED_HOSTS = []
 THIRD_PARTY_APPS = [
     "drf_yasg",
     "rest_framework",
+    "django_celery_results",
 ]
 
 LOCAL_APPS = ["reconcile"]
@@ -131,6 +132,17 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REDIS_URL = os.environ.get("REDIS_URL", default="redis://localhost:6379/0")
+
+# Cache settings
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}
 
 # Celery Settings
 CELERY_BROKER_URL = REDIS_URL

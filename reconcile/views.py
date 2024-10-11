@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from .enums import Status
 from .serializers import CSVFileSerializer, ReconcilationRecordSerializer
 from .services import ReconcilationService
+from .tasks import trigger_reconcilation
 
 
 class CSVUploadAPIView(GenericAPIView):
@@ -24,9 +25,11 @@ class CSVUploadAPIView(GenericAPIView):
         target_file = request.FILES["target_file"]
 
         try:
-            record = ReconcilationService(
-                source_file=source_file, target_file=target_file
-            ).create_record_trigger_task()
+            record = ReconcilationService.create_record(
+                source_file=source_file,
+                target_file=target_file,
+            )
+            trigger_reconcilation.delay(record.task_id)
         except ValueError as err:
             return Response(
                 data={

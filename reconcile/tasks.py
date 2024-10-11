@@ -29,7 +29,7 @@ def trigger_reconcilation(task_id: str) -> Dict[str, Any]:
         return generate_result(message="this task has already been processed")
 
     try:
-        reconcilation_service = ReconcilationService(source_file=record.source_file, target_file=record.target_file)
+        reconcilation_service = ReconcilationService(record=record)
         reconcilation_service.reconcile_and_save_data()
     except ValueError as err:
         return generate_result(status=False, message=f"an error occurred", error=str(err))

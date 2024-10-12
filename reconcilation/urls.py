@@ -26,5 +26,5 @@ schema_urls = [
 urlpatterns = [
     *schema_urls,
     path("admin/", admin.site.urls),
-    path("reconcilation/", include("reconcile.urls")),
+    path("api/reconcilation/", include("reconcile.urls")),
 ]

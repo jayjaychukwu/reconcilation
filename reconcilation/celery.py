@@ -1,9 +1,9 @@
 from __future__ import absolute_import, unicode_literals
 
 import os
+from datetime import timedelta
 
 from celery import Celery
-from kombu import Queue
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "reconcilation.settings")
 app = Celery("backend")

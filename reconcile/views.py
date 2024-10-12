@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 from .enums import Status
 from .serializers import CSVFileSerializer, ReconcilationRecordSerializer
-from .services import ReconcilationService
+from .services import OutputFormattingService, ReconcilationService
 from .tasks import trigger_reconcilation
 
 
@@ -75,3 +75,17 @@ class ReconcilationAPIView(GenericAPIView):
             data,
             status=status.HTTP_200_OK,
         )
+
+
+class ReconcilationReportAPIView(GenericAPIView):
+
+    def get(self, request, task_id: str, file_format: str):
+        try:
+            response = OutputFormattingService(
+                file_format=file_format,
+                task_id=task_id,
+            ).generate_file_format_response()
+        except ValueError as err:
+            return Response(data={"message": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return response

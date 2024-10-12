@@ -20,6 +20,15 @@ def generate_result(message: str, status: bool = True, error: str | None = None)
 
 @shared_task
 def trigger_reconcilation(task_id: str) -> Dict[str, Any]:
+    """
+    Trigger reconcilation for a pending record
+
+    Args:
+        task_id (str): the task ID for a reconcilation record
+
+    Returns:
+        Dict[str, Any]: the result of the reconcilation
+    """
     try:
         record = ReconcilationRecord.objects.get(task_id=task_id)
     except ReconcilationRecord.DoesNotExist:
@@ -34,4 +43,4 @@ def trigger_reconcilation(task_id: str) -> Dict[str, Any]:
     except ValueError as err:
         return generate_result(status=False, message=f"an error occurred", error=str(err))
 
-    return generate_result(message="task processed and saved successfully")
+    return generate_result(message=f"task, with ID, {task_id}, processed and saved successfully")

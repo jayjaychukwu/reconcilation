@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .enums import Status
 from .serializers import CSVFileSerializer, ReconcilationRecordSerializer
@@ -77,7 +78,7 @@ class ReconcilationAPIView(GenericAPIView):
         )
 
 
-class ReconcilationReportAPIView(GenericAPIView):
+class ReconcilationReportAPIView(APIView):
 
     def get(self, request, task_id: str, file_format: str):
         try:

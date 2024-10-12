@@ -1,7 +1,12 @@
+import csv
+import json
+from io import StringIO
 from typing import Any, Dict, List
 
 import pandas as pd
 from django.core.files.uploadedfile import UploadedFile
+from django.http import HttpResponse, JsonResponse
+from django.template.loader import render_to_string
 
 from .models import ReconcilationRecord, Status
 
@@ -209,3 +214,99 @@ class ReconcilationService:
         reconciled_data["status"] = Status.SUCCESS
 
         self.update_record(data=reconciled_data, record=self.record)
+
+
+class OutputFormattingService:
+    valid_formats = ["json", "html", "csv"]
+
+    def __init__(
+        self,
+        file_format: str,
+        task_id: str | None = None,
+    ):
+        file_format = file_format.lower()
+        if file_format not in self.valid_formats:
+            raise ValueError(f"invalid file format, choose from: {self.valid_formats}")
+
+        self.file_format = file_format
+
+        try:
+            record = ReconcilationRecord.objects.get(task_id=task_id)
+        except ReconcilationRecord.DoesNotExist:
+            raise ValueError(f"record with ID, {task_id}, does not exist")
+
+        self.record = record
+
+    def prepare_report_data(self):
+        self.report_data = {
+            "missing_data_in_source_file": self.record.missing_data_in_source_file,
+            "missing_data_in_target_file": self.record.missing_data_in_target_file,
+            "discrepancies": self.record.discrepancies,
+        }
+
+    def generate_file_format_response(self):
+        self.prepare_report_data()
+
+        if self.file_format == "json":
+            return self.generate_json_response()
+        elif self.file_format == "html":
+            return self.generate_html_response()
+        else:
+            return self.generate_csv_response()
+
+    def generate_json_response(self):
+        """Generate a JSON file for download."""
+        report_data = self.report_data
+        response = HttpResponse(content_type="application/json")
+        response["Content-Disposition"] = "attachment; filename=reconciliation_report.json"
+        json.dump(report_data, response, indent=4)
+        return response
+
+    def generate_csv_response(self):
+        """Generate a CSV file for download."""
+        report_data = self.report_data
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = "attachment; filename=reconciliation_report.csv"
+
+        writer = csv.writer(response)
+
+        # Write headers for each section
+        missing_columns = ["id", "name", "date", "amount"]
+        writer.writerow(["Missing in Source File"])
+        writer.writerow(missing_columns)
+        for row in report_data["missing_data_in_source_file"]:
+            writer.writerow([row.get(missing_column, "") for missing_column in missing_columns])
+
+        writer.writerow([])
+        writer.writerow(["Missing in Target File"])
+        writer.writerow(missing_columns)
+        for row in report_data["missing_data_in_target_file"]:
+            writer.writerow([row.get(missing_column, "") for missing_column in missing_columns])
+
+        writer.writerow([])
+        writer.writerow(["Discrepancies"])
+        discrepancy_columns = ["id", "name", "target_name", "date", "target_date", "amount", "target_amount"]
+        writer.writerow(discrepancy_columns)
+        for row in report_data["discrepancies"]:
+            writer.writerow([row.get(discrepancy_column, "") for discrepancy_column in discrepancy_columns])
+
+        return response
+
+    def generate_html_response(self):
+        """Generate an HTML file for download."""
+        report_data = self.report_data
+        response = HttpResponse(content_type="text/html")
+        response["Content-Disposition"] = "attachment; filename=reconciliation_report.html"
+
+        html_content = render_to_string(
+            template_name="reconcilation_report_template.html",
+            context={
+                "missing_data_in_source_file": report_data["missing_data_in_source_file"],
+                "missing_data_in_target_file": report_data["missing_data_in_target_file"],
+                "discrepancies": report_data["discrepancies"],
+            },
+        )
+
+        response.write(html_content)
+        return response
